@@ -1,0 +1,3 @@
+[submodule "keenchic/inspections/ocr"]
+	path = keenchic/inspections/ocr
+	url = git@github.com:shrchen1/keenchic-OCR.git

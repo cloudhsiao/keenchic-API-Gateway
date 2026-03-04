@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+wheels/
+
+# uv / virtualenv
+.venv/
+uv.lock.bak
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Test / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Model weights & large binaries
+*.engine
+*.trt
+*.onnx
+*.xml
+*.bin
+
+# Upload directory (runtime generated, configurable via KEENCHIC_UPLOAD_DIR)
+uploads/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# AI Coding Assistants
+
+.agent
+
+# Claude Code (Anthropic)
+.claude/*.local.*
+CLAUDE.local.md
+
+# GitHub Copilot / Copilot CLI (GitHub)
+.copilot/
+.github
+# Note: .github/copilot-instructions.md is intentional project config, not ignored
+
+# Google Gemini CLI
+.gemini/

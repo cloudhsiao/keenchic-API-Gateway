@@ -1,0 +1,69 @@
+schema: spec-driven
+
+context: |
+  语言：中文（繁體）
+  所有產出物必須用符合台灣用語的繁體中心撰寫。
+
+  ## Project
+  keenchic-API-Gateway — A FastAPI-based API gateway for routing image inspection requests
+  to dynamically-loaded deep learning inference modules.
+
+  ## Tech Stack
+  - Language: Python 3.12+
+  - Framework: FastAPI + uvicorn (bare-metal, no Docker)
+  - Dependency management: uv + pyproject.toml
+  - Config: pydantic-settings (env vars)
+  - ML backends: OpenVINO (CPU) and TensorRT (GPU); auto-detected at startup
+
+  ## Directory Structure
+  keenchic/               ← main package namespace
+    api/                  ← FastAPI router + auth dependency
+    core/                 ← config.py, inspection_manager.py (dynamic model cache)
+    services/             ← external data access (permit_lookup.py → FDA API)
+    schemas/              ← Pydantic request/response models
+    inspections/
+      ocr/                ← git submodule (keenchic-OCR); read-only inference engines
+      adapters/ocr/       ← our gateway adapters wrapping each engine's proc()
+      base.py             ← InspectionAdapter ABC
+      registry.py         ← "ocr/datecode-num" → adapter class mapping
+  main.py                 ← uvicorn entry point
+
+  ## Auth & Routing
+  - API key passed via X-API-KEY request header; validated via FastAPI Dependency
+  - Inspection module selected via X-Inspection-Name header (e.g. ocr/datecode-num)
+  - Single endpoint: POST /api/v1/inspect
+  - Health check: GET /health (no auth)
+
+  ## Dynamic Model Loading
+  - InspectionManager is a singleton; holds the currently loaded adapter
+  - If X-Inspection-Name matches the current adapter, reuse without reload
+  - If different, call adapter.unload_models() then adapter.load_models()
+  - Protected by asyncio.Lock to prevent concurrent model swaps
+
+  ## Inspection Modules (in submodule)
+  All modules expose a proc(**kwargs) function. Common signature:
+    proc(image=np.ndarray, models=[...], detection_args={}, debug=False) -> dict
+  Available: datecode_num_st, holo_num_st, holo_num_st_lol, pill_count_st, temper_num_st
+
+  ## Conventions
+  - Conventional Commits (feat:, fix:, chore:, docs:, refactor:)
+  - Functions < 30 lines; single responsibility
+  - No hardcoded secrets; all credentials via environment variables
+  - Explicit error handling; no silent exception swallowing
+  - No TODO/FIXME in committed code
+
+rules:
+  proposal:
+    - State the inspection module(s) affected and whether submodule changes are required
+    - Include a Non-goals section to prevent scope creep
+    - Keep under 400 words
+
+  specs:
+    - Include at least one happy-path scenario and one error/edge-case scenario
+    - For new inspection adapters, include a scenario for first-load vs. cached-load
+
+  tasks:
+    - Break tasks into chunks completable in under 2 hours
+    - Reference specific file paths (e.g. "add load_models() to keenchic/inspections/adapters/ocr/holo_num.py")
+    - Always include a task for updating registry.py when adding a new adapter
+    - Always include a smoke-test task (curl or pytest) as the final task
