@@ -39,5 +39,9 @@ class InspectResponse(BaseModel):
     pname_en: Optional[str] = None
     pname_zh: Optional[str] = None
 
+    # Pill-count results
+    pill_counts: Optional[int] = None
+    centers: Optional[list] = None
+
     # Diagnostic image: base64-encoded PNG, included when include_diag=true
     diag_img: Optional[str] = None

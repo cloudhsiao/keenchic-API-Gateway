@@ -199,6 +199,7 @@ class PillCountAdapter(InspectionAdapter):
         payload: dict = {
             "result": int(result.get("result", InspectionResultCode.DETECTION_FAILED)),
             "pill_counts": int(result.get("pill_counts", 0)),
+            "centers": result.get("centers", []),
         }
         if include_diag:
             for key in ("diag_img", "diag_img_en"):
