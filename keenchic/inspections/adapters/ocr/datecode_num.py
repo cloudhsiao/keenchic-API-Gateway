@@ -244,7 +244,16 @@ class DatecodeNumAdapter(InspectionAdapter):
         from keenchic.services.permit_lookup import get_product_by_pcode
 
         pcode = (payload.get("pcode") or "").strip()
-        lookup = get_product_by_pcode(pcode) if pcode else None
+        if not pcode:
+            payload["pname_en"] = None
+            payload["pname_zh"] = None
+            return payload
+
+        stripped = pcode.lstrip("0")
+        lookup = get_product_by_pcode(stripped) if stripped != pcode else None
+        if not lookup:
+            lookup = get_product_by_pcode(pcode)
+
         payload["pname_en"] = lookup.get("product_name_en") if lookup else None
         payload["pname_zh"] = lookup.get("product_name_zh") if lookup else None
         return payload
