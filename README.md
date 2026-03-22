@@ -357,6 +357,7 @@ HTTP 200 JSON
 - **欄位驗證由 Adapter 自聲明**：每個 adapter 透過 `accepted_kwargs()` 宣告接受的請求欄位，router 統一驗證，新增 adapter 不需修改 router
 - **Submodule 隔離**：`keenchic/inspections/ocr/` 為 git submodule，gateway 只透過 adapter 呼叫，不直接修改
 - **結構化日誌**：每個請求綁定 `request_id`，便於追蹤
+- **FDA 許可證資料預載快取**：`permit_lookup` 模組在首次 import 時從 FDA 開放資料平台下載完整許可證清單並快取於記憶體。後續 API request 的 pcode 查詢皆為記憶體內搜尋，不再對外發送請求。啟動時下載失敗會在首次查詢時重試。若 FDA 端資料有更新，需重啟服務才能取得最新資料。
 
 ---
 
