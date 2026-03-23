@@ -38,6 +38,9 @@ uv run uvicorn main:app --host 0.0.0.0 --port 8000
 # 執行測試
 uv run pytest
 uv run pytest tests/test_router.py::test_health -v
+
+# Jetson aarch64 wheel 構建（須先安裝 cython, setuptools, wheel, numpy）
+python3 build_wheel.py
 ```
 
 
@@ -47,13 +50,15 @@ uv run pytest tests/test_router.py::test_health -v
 
 ```
 HTTP POST /api/v1/inspect
-  Header: X-API-KEY        → deps.py: require_api_key() 驗證
+  Header: X-API-KEY         → deps.py: require_api_key() 驗證
   Header: X-Inspection-Name → router.py 讀取，傳入 InspectionManager
-  Body:   multipart/form-data (image, permit_image, YMD_option, include_diag)
+  Body:   multipart/form-data (image, date_image, permit_image, YMD_option, include_diag)
+          ↓
+  router.py: 驗證 kwargs（adapter.accepted_kwargs() 動態白名單，非法欄位回 422）
           ↓
   InspectionManager.run(inspection_name, image, **kwargs)
-    → registry.py: get_adapter_class(name)   # lazy 建構 dict
-    → adapter.load_models(backend)           # 第一次或換 inspection 時
+    → registry.py: get_adapter_class(name)   # 首次呼叫才 importlib 載入
+    → adapter.load_models(backend)           # 第一次或切換 inspection 時
     → adapter.run(image, **kwargs)           # 同步推理
           ↓
   JSONResponse (InspectResponse schema)
@@ -63,24 +68,30 @@ HTTP POST /api/v1/inspect
 
 | 檔案 | 職責 |
 |------|------|
-| `main.py` | FastAPI app，lifespan、logging middleware |
-| `serve.py` | CLI entry point，解析 --backend/--host/--port |
+| `main.py` | FastAPI app，lifespan、structlog logging middleware（綁定 request_id） |
+| `serve.py` | CLI entry point（`keenchic-serve`），解析 --backend/--host/--port |
 | `keenchic/core/config.py` | pydantic-settings，讀取環境變數 |
-| `keenchic/core/inspection_manager.py` | **Singleton**，一次只保留一個 adapter 在記憶體 |
-| `keenchic/inspections/base.py` | `InspectionAdapter` ABC（load_models / unload_models / run） |
-| `keenchic/inspections/registry.py` | inspection name → Adapter class 對應表 |
+| `keenchic/core/inspection_manager.py` | **Singleton**，asyncio.Lock 序列化 load/unload，一次只保留一個 adapter |
+| `keenchic/core/logging.py` | structlog 設定，支援 text/json 輸出格式 |
+| `keenchic/api/router.py` | `POST /api/v1/inspect`、`GET /health` |
+| `keenchic/api/deps.py` | `require_api_key()` FastAPI dependency |
+| `keenchic/inspections/base.py` | `InspectionAdapter` ABC（load_models / unload_models / run / accepted_kwargs） |
+| `keenchic/inspections/registry.py` | `_ADAPTER_ENTRIES` → lazy `importlib.import_module` 建構 registry |
 | `keenchic/inspections/result_codes.py` | `InspectionResultCode`（0=SUCCESS, 1=INVALID_INPUT, 2=DETECTION_FAILED） |
 | `keenchic/schemas/response.py` | `InspectResponse` pydantic model |
-| `keenchic/services/permit_lookup.py` | 從 FDA open data 下載藥品許可證資料並快取 |
+| `keenchic/services/permit_lookup.py` | FDA open data 許可證查詢，模組載入時預載快取，失敗則首次查詢時重試 |
+| `build_wheel.py` | Cython wheel 構建（三層編譯：keenchic dotted modules → submodule dotted → submodule bare） |
 
 ### Adapter 對照表
 
-| X-Inspection-Name | Adapter Class | Submodule Dir |
-|---|---|---|
-| `ocr/datecode-num` | `DatecodeNumAdapter` | `datecode_num_st` |
-| `ocr/holo-num` | `HoloNumAdapter` | `holo_num_st_lol` |
-| `ocr/pill-count` | `PillCountAdapter` | `pill_count_st` |
-| `ocr/temper-num` | `TemperNumAdapter` | `temper_num_st` |
+| X-Inspection-Name | Adapter Class | Submodule Dir | accepted_kwargs |
+|---|---|---|---|
+| `ocr/datecode-num` | `DatecodeNumAdapter` | `ocr/` + `datecode_num_st/` | `include_diag`, `YMD_option`, `permit_image` |
+| `ocr/holo-num` | `HoloNumAdapter` | `holo_num_st_lol/` | `include_diag` |
+| `ocr/pill-count` | `PillCountAdapter` | `pill_count_st/` | `include_diag` |
+| `ocr/temper-num` | `TemperNumAdapter` | `temper_num_st/` | `include_diag` |
+
+所有 submodule dir 位於 `keenchic/inspections/ocr/` 下。
 
 ### Backend 選擇邏輯
 
@@ -105,7 +116,8 @@ HTTP POST /api/v1/inspect
 ## 新增 Adapter
 
 1. 在 `keenchic/inspections/adapters/ocr/` 新增 `<name>.py`，繼承 `InspectionAdapter`，實作 `load_models` / `unload_models` / `run`
-2. 在 `keenchic/inspections/registry.py` 的 `_build_registry()` 加一行對應
+2. 若需要額外請求欄位，覆寫 `accepted_kwargs()` 回傳 set（router 據此做白名單驗證）
+3. 在 `keenchic/inspections/registry.py` 的 `_ADAPTER_ENTRIES` 加一行 `(name, module_path, class_name)`
 
 ### sys.path 衝突處理
 
@@ -116,3 +128,5 @@ HTTP POST /api/v1/inspect
 - `keenchic/inspections/ocr/` 是 **git submodule**，任何檔案**不得修改**；只能讀取以理解介面
 - `pill_count_st/procd_pill.py` 頂層 `import streamlit`，但 `proc()` 不使用它 → adapter 必須在 import 前先 mock
 - `holo_num` 兩個後端使用不同 proc 檔：OpenVINO 用 `procd_holo_ov`，TRT 用 `procd_holo`
+- `holo_num` TRT 的 enhance model 是工廠函式（`get_model_trt`），由 `procd_holo.proc` 在推理時呼叫
+- `InspectionManager` 使用 `asyncio.Lock` 序列化，uvicorn 限 `workers=1`
