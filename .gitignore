@@ -55,12 +55,12 @@ uploads/
 .agent
 
 # Claude Code (Anthropic)
-.claude/*.local.*
+.claude/
 CLAUDE.local.md
 
 # GitHub Copilot / Copilot CLI (GitHub)
 .copilot/
-.github
+.github/
 # Note: .github/copilot-instructions.md is intentional project config, not ignored
 
 # Google Gemini CLI
