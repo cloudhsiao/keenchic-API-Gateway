@@ -24,6 +24,7 @@
       - [`ocr/holo-num` — 全息數字 OCR](#ocrholo-num--全息數字-ocr)
       - [`ocr/pill-count` — 藥丸計數](#ocrpill-count--藥丸計數)
       - [`ocr/temper-num` — 溫度 / 有效期 OCR](#ocrtemper-num--溫度--有效期-ocr)
+      - [`ocr/temper-table` — 多通道溫度表格 OCR](#ocrtemper-table--多通道溫度表格-ocr)
   - [架構說明](#架構說明)
   - [新增 Adapter](#新增-adapter)
 
@@ -312,6 +313,49 @@ curl -X POST "http://localhost:8000/api/v1/inspect?include_diag=true" \
 | `diag_img` | 診斷圖（include_diag=true） |
 
 支援後端：OpenVINO（僅 CPU，無 TRT 權重）
+
+---
+
+#### `ocr/temper-table` — 多通道溫度表格 OCR
+
+辨識多探頭溫度計的表格顯示面板，支援指定讀取位置（row/col）與表格尺寸。
+
+**額外 Request 欄位（form-data）**
+
+| 欄位 | 類型 | 預設值 | 說明 |
+|---|---|---|---|
+| `input_coords` | string | `"1,1"` | 要讀取的儲存格位置，格式 `"[row,col]"` 或 `"row,col"`（1-based） |
+| `table_size` | string | `"2,2"` | 表格尺寸，格式 `"[rows,cols]"` 或 `"rows,cols"` |
+
+**回應欄位**
+
+| 欄位 | 說明 |
+|---|---|
+| `result` | Result code |
+| `pred_text` | 指定儲存格的辨識文字 |
+| `diag_img` | 診斷圖（include_diag=true） |
+
+**curl 範例**
+
+```bash
+# 基本辨識（讀取 [1,1]，2x2 表格）
+curl -X POST http://localhost:8000/api/v1/inspect \
+  -H "X-API-KEY: your-api-key" \
+  -H "X-Inspection-Name: ocr/temper-table" \
+  -F "image=@/path/to/image.png"
+
+# 指定儲存格與表格尺寸
+curl -X POST http://localhost:8000/api/v1/inspect \
+  -H "X-API-KEY: your-api-key" \
+  -H "X-Inspection-Name: ocr/temper-table" \
+  -F "image=@/path/to/image.png" \
+  -F "input_coords=[1,2]" \
+  -F "table_size=[2,4]"
+```
+
+> `input_coords` 超出實際偵測結果範圍時，回傳 `result=2`（DETECTION_FAILED）而非錯誤。
+
+支援後端：OpenVINO（CPU），TensorRT（GPU，需對應 `.engine` 權重）
 
 ---
 
