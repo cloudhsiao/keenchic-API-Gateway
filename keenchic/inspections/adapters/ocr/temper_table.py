@@ -24,6 +24,10 @@ def _ensure_submodule_on_path() -> None:
     if _SUBMODULE_DIR not in sys.path:
         sys.path.insert(0, _SUBMODULE_DIR)
 
+    # np.unicode_ was removed in NumPy 2.0; the submodule (read-only) still uses it.
+    if not hasattr(np, "unicode_"):
+        np.unicode_ = np.str_  # type: ignore[attr-defined]
+
     # Clear all modules from both temper_num and temper_table to prevent
     # cross-contamination when the active adapter switches between the two.
     for mod_name in [
@@ -181,6 +185,12 @@ class TemperTableAdapter(InspectionAdapter):
                 models=[self._detect_crop, self._model_crop, self._detect_num, self._model_num],
                 debug=False,
             )
+        except (IndexError, ValueError) as exc:
+            result = {
+                "result": InspectionResultCode.DETECTION_FAILED,
+                "pred_text": "",
+                "_error": str(exc),
+            }
         finally:
             if cuda_pushed:
                 self._cuda_context.pop()
