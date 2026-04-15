@@ -90,6 +90,7 @@ HTTP POST /api/v1/inspect
 | `ocr/holo-num` | `HoloNumAdapter` | `holo_num_st_lol/` | `include_diag` |
 | `ocr/pill-count` | `PillCountAdapter` | `pill_count_st/` | `include_diag` |
 | `ocr/temper-num` | `TemperNumAdapter` | `temper_num_st/` | `include_diag` |
+| `ocr/temper-table` | `TemperTableAdapter` | `temper_num_st/` | `include_diag`, `input_coords`, `table_size` |
 
 所有 submodule dir 位於 `keenchic/inspections/ocr/` 下。
 
@@ -101,6 +102,7 @@ HTTP POST /api/v1/inspect
 - `AUTO` → 同 GPU 邏輯
 
 `temper_num` 無 TRT weights，永遠走 OpenVINO。
+`temper_table` 支援 TRT（primary on GPU edge server）及 OpenVINO fallback；兩者共用 `temper_num_st/` submodule dir，使用不同的後端模組（`model_detect_openvino_512` / `model_detect_trt_512`）。
 
 ### 環境變數（`.env` 或 shell export）
 

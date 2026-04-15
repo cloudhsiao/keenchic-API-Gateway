@@ -26,7 +26,17 @@ def _ensure_submodule_on_path() -> None:
 
     # Clear modules that are commonly named across different submodules
     # to force re-import from the new sys.path entry.
-    for mod_name in ["model_detect_openvino", "model_detect_trt", "utils", "procd_date", "procd_holo", "procd_temper"]:
+    for mod_name in [
+        "model_detect_openvino",
+        "model_detect_openvino_512",
+        "model_detect_trt",
+        "model_detect_trt_512",
+        "utils",
+        "procd_date",
+        "procd_holo",
+        "procd_temper",
+        "procd_table",
+    ]:
         if mod_name in sys.modules:
             del sys.modules[mod_name]
 
