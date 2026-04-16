@@ -24,7 +24,7 @@
       - [`ocr/holo-num` — 全息數字 OCR](#ocrholo-num--全息數字-ocr)
       - [`ocr/pill-count` — 藥丸計數](#ocrpill-count--藥丸計數)
       - [`ocr/temper-num` — 溫度 / 有效期 OCR](#ocrtemper-num--溫度--有效期-ocr)
-      - [`ocr/temper-table` — 多通道溫度表格 OCR](#ocrtemper-table--多通道溫度表格-ocr)
+      - [`ocr/meter-table` — 多通道溫度表格 OCR](#ocrmeter-table--多通道溫度表格-ocr)
   - [架構說明](#架構說明)
   - [新增 Adapter](#新增-adapter)
 
@@ -316,7 +316,7 @@ curl -X POST "http://localhost:8000/api/v1/inspect?include_diag=true" \
 
 ---
 
-#### `ocr/temper-table` — 多通道溫度表格 OCR
+#### `ocr/meter-table` — 多通道溫度表格 OCR
 
 辨識多探頭溫度計的表格顯示面板，支援指定讀取位置（row/col）與表格尺寸。
 
@@ -341,13 +341,13 @@ curl -X POST "http://localhost:8000/api/v1/inspect?include_diag=true" \
 # 基本辨識（讀取 [1,1]，2x2 表格）
 curl -X POST http://localhost:8000/api/v1/inspect \
   -H "X-API-KEY: your-api-key" \
-  -H "X-Inspection-Name: ocr/temper-table" \
+  -H "X-Inspection-Name: ocr/meter-table" \
   -F "image=@/path/to/image.png"
 
 # 指定儲存格與表格尺寸
 curl -X POST http://localhost:8000/api/v1/inspect \
   -H "X-API-KEY: your-api-key" \
-  -H "X-Inspection-Name: ocr/temper-table" \
+  -H "X-Inspection-Name: ocr/meter-table" \
   -F "image=@/path/to/image.png" \
   -F "input_coords=[1,2]" \
   -F "table_size=[2,4]"

@@ -14,7 +14,7 @@ _ADAPTER_ENTRIES: list[tuple[str, str, str]] = [
     ("ocr/holo-num", "keenchic.inspections.adapters.ocr.holo_num", "HoloNumAdapter"),
     ("ocr/pill-count", "keenchic.inspections.adapters.ocr.pill_count", "PillCountAdapter"),
     ("ocr/temper-num", "keenchic.inspections.adapters.ocr.temper_num", "TemperNumAdapter"),
-    ("ocr/temper-table", "keenchic.inspections.adapters.ocr.temper_table", "TemperTableAdapter"),
+    ("ocr/meter-table", "keenchic.inspections.adapters.ocr.meter_table", "MeterTableAdapter"),
 ]
 
 

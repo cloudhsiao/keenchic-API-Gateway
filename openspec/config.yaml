@@ -1,8 +1,8 @@
 schema: spec-driven
 
 context: |
-  语言：中文（繁體）
-  所有產出物必須用符合台灣用語的繁體中心撰寫。
+  語言：中文（繁體）
+  所有產出物必須用符合台灣用語的繁體中文撰寫。
 
   ## Project
   keenchic-API-Gateway — A FastAPI-based API gateway for routing image inspection requests

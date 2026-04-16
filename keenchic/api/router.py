@@ -137,10 +137,10 @@ async def inspect(
     include_diag: bool = Query(False),
     YMD_option: Optional[str] = Form(None, description="1=D/M/Y (default), 2=M/D/Y"),
     input_coords: Optional[str] = Form(
-        None, description="Cell position '[row,col]' or 'row,col' (ocr/temper-table)"
+        None, description="Cell position '[row,col]' or 'row,col' (ocr/meter-table)"
     ),
     table_size: Optional[str] = Form(
-        None, description="Grid dimensions '[rows,cols]' or 'rows,cols' (ocr/temper-table)"
+        None, description="Grid dimensions '[rows,cols]' or 'rows,cols' (ocr/meter-table)"
     ),
     permit_image: Optional[UploadFile] = File(
         None, description="Optional permit code image (v2)"
