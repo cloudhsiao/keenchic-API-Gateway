@@ -11,7 +11,7 @@ from keenchic.inspections.base import InspectionAdapter
 from keenchic.inspections.result_codes import InspectionResultCode
 
 # Absolute path to temper_num_st package inside the submodule.
-# temper_table shares the same submodule directory as temper_num.
+# meter_table shares the same submodule directory as temper_num.
 _SUBMODULE_DIR = os.path.normpath(
     os.path.join(os.path.dirname(__file__), "..", "..", "ocr", "temper_num_st")
 )
@@ -28,7 +28,7 @@ def _ensure_submodule_on_path() -> None:
     if not hasattr(np, "unicode_"):
         np.unicode_ = np.str_  # type: ignore[attr-defined]
 
-    # Clear all modules from both temper_num and temper_table to prevent
+    # Clear all modules from both temper_num and meter_table to prevent
     # cross-contamination when the active adapter switches between the two.
     for mod_name in [
         "model_detect_openvino",
@@ -77,8 +77,8 @@ def _parse_coords(raw: str, field_name: str) -> list[int]:
     )
 
 
-class TemperTableAdapter(InspectionAdapter):
-    """Adapter wrapping the temper_table inference engine (procd_table.py).
+class MeterTableAdapter(InspectionAdapter):
+    """Adapter wrapping the meter_table inference engine (procd_table.py).
 
     Performs multi-channel temperature probe table OCR.
     Supports both TensorRT (primary on GPU edge server) and OpenVINO (fallback).
@@ -120,12 +120,12 @@ class TemperTableAdapter(InspectionAdapter):
                 last_exc = None
                 break
             except Exception as exc:
-                print(f"TemperTableAdapter: skipping {choice} backend: {exc}")
+                print(f"MeterTableAdapter: skipping {choice} backend: {exc}")
                 last_exc = exc
                 continue
 
         if last_exc is not None:
-            raise RuntimeError(f"All backends failed for temper-table: {last_exc}") from last_exc
+            raise RuntimeError(f"All backends failed for meter-table: {last_exc}") from last_exc
 
         try:
             self._model_crop = self._get_crop_model()
