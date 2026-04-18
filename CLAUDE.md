@@ -21,6 +21,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 開始實作新功能時建立並切換到新的 Git 分支
 - 永遠 *不要* 推送到 main 分支（main 或 master），避免干擾 prod 環境
 
+### Fork Workflow（本 repo 專屬）
+
+本 repo 採用 fork workflow：
+- `origin` = `cloudhsiao/keenchic-API-Gateway`（個人 fork）
+- `upstream` = `shrchen1/keenchic-API-Gateway`（原始 repo，prod）
+
+規則：
+- Feature branch 一律 `git push -u origin <branch>`，**永不 push 到 upstream**
+- PR 必須從 `cloudhsiao:<branch>` 開到 `shrchen1:main`
+- 開新 feature branch 前先同步上游：`git fetch upstream && git rebase upstream/main`
+- 使用 gh CLI：`gh pr create --repo shrchen1/keenchic-API-Gateway --base main --head cloudhsiao:<branch>`
+  - 或執行一次 `gh repo set-default shrchen1/keenchic-API-Gateway`，之後 `gh pr create` 可省略 `--repo`
+
 
 ## 常用指令
 
@@ -42,6 +55,67 @@ uv run pytest tests/test_router.py::test_health -v
 # Jetson aarch64 wheel 構建（須先安裝 cython, setuptools, wheel, numpy）
 python3 build_wheel.py
 ```
+
+
+## API Service Dev Runbook
+
+### 本機開發啟動
+
+```bash
+# 1. 安裝依賴
+uv sync
+
+# 2. 建立本機環境變數
+cp .env.example .env
+
+# 3. 至少設定 API key；CPU 開發建議同時設定 backend
+export KEENCHIC_API_KEY=dev-api-key
+export KEENCHIC_BACKEND=CPU
+
+# 4. 啟動 API service
+uv run python serve.py --backend cpu
+```
+
+### 常用 dev 啟動方式
+
+```bash
+# 推薦：走 CLI entrypoint
+uv run keenchic-serve --backend cpu --host 0.0.0.0 --port 8000
+
+# 等價方式：直接跑 serve.py
+uv run python serve.py --backend cpu --host 0.0.0.0 --port 8000
+
+# 進階：直接跑 uvicorn，workers 必須是 1
+uv run uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
+```
+
+### 背景執行與看 log
+
+```bash
+# 背景執行
+uv run python serve.py --backend cpu > /tmp/keenchic-api.log 2>&1 &
+
+# 即時追 log
+tail -f /tmp/keenchic-api.log
+```
+
+### 啟動後確認
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+預期回傳至少包含：
+- `status: ok`
+- `backend_config: CPU`（若以 CPU 模式啟動）
+
+### 開發注意事項
+
+- 本 repo 預設 `KEENCHIC_BACKEND=GPU`，本機開發若沒有 TensorRT / CUDA，請明確使用 `--backend cpu` 或設定 `KEENCHIC_BACKEND=CPU`
+- `.env` 會由 `pydantic-settings` 自動載入，不一定要用 shell `export`
+- 若使用 `uvicorn`，`--workers` 必須固定為 `1`，因為模型 singleton 無法跨 process 共享
+- `KEENCHIC_UPLOAD_DIR` 有設定時，request 上傳圖片會被存到該目錄；不想落地可留空
+- 若要被動監看錯誤，不必主動打 API，只需讓服務在背景執行並 `tail -f` log
 
 
 ## 專案架構

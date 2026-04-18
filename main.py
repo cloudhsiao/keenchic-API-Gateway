@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -61,6 +63,23 @@ async def logging_middleware(request: Request, call_next) -> Response:
             error=str(exc),
         )
         raise
+
+
+def _sanitize_error(err: dict) -> dict:
+    result = {}
+    for k, v in err.items():
+        if k == "input":
+            continue
+        if k == "ctx" and isinstance(v, dict):
+            result[k] = {ck: str(cv) if isinstance(cv, Exception) else cv for ck, cv in v.items()}
+        else:
+            result[k] = v
+    return result
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    return JSONResponse(status_code=422, content={"detail": [_sanitize_error(e) for e in exc.errors()]})
 
 
 app.include_router(router)

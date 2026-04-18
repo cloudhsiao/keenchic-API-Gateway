@@ -185,7 +185,7 @@ class MeterTableAdapter(InspectionAdapter):
                 models=[self._detect_crop, self._model_crop, self._detect_num, self._model_num],
                 debug=False,
             )
-        except (IndexError, ValueError) as exc:
+        except Exception as exc:
             result = {
                 "result": InspectionResultCode.DETECTION_FAILED,
                 "pred_text": "",
