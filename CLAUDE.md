@@ -41,6 +41,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 使用 gh CLI：`gh pr create --repo shrchen1/keenchic-API-Gateway --base main --head cloudhsiao:<branch>`
   - 或執行一次 `gh repo set-default shrchen1/keenchic-API-Gateway`，之後 `gh pr create` 可省略 `--repo`
 
+### AI Commit 前檢查
+
+Commit 之前，AI 必須對照**變更主題**與**當前 branch name 前綴**（feat/fix/chore/docs）：
+- 主題嚴重不符時（例如 `fix/*` branch 出現新功能 / `docs/*` 夾帶邏輯變更），先提示使用者是否要改 branch name、拆 commit、或拆 PR
+- 相符或只是小幅順手修（typo、註解）則直接 commit，不打斷流程
+- 同一 branch 含多種主題但有清楚 umbrella（例如 `chore/hardening` 含 feat + fix + docs）算合理，不需提示
+
 
 ## 常用指令
 
