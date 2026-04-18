@@ -30,7 +30,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 規則：
 - Feature branch 一律 `git push -u origin <branch>`，**永不 push 到 upstream**
 - PR 必須從 `cloudhsiao:<branch>` 開到 `shrchen1:main`
-- 開新 feature branch 前先同步上游：`git fetch upstream && git rebase upstream/main`
+- 開新 feature branch 前必須先切回 main 並同步上游：
+  ```bash
+  git checkout main
+  git fetch upstream
+  git merge --ff-only upstream/main
+  git push origin main                 # 讓 fork 的 main 也跟上，避免逐漸落後
+  git checkout -b feat/<next-feature>
+  ```
 - 使用 gh CLI：`gh pr create --repo shrchen1/keenchic-API-Gateway --base main --head cloudhsiao:<branch>`
   - 或執行一次 `gh repo set-default shrchen1/keenchic-API-Gateway`，之後 `gh pr create` 可省略 `--repo`
 
