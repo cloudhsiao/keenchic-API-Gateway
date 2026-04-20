@@ -1,0 +1,14 @@
+inspection_name = "ocr/temper-num"
+
+[adapter]
+source = "keenchic/inspections/adapters/ocr/temper_num.py"
+cython = true
+
+[[submodule]]
+dir = "keenchic/inspections/ocr/temper_num_st"
+bare = [
+    { name = "model_detect_openvino", src = "model_detect_openvino.py" },
+    { name = "procd_temper",          src = "procd_temper.py"          },
+    { name = "utils",                 src = "utils.py"                 },
+]
+weights_subdir = "weights"

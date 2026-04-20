@@ -1,0 +1,15 @@
+inspection_name = "ocr/meter-table"
+
+[adapter]
+source = "keenchic/inspections/adapters/ocr/meter_table.py"
+cython = false
+
+[[submodule]]
+dir = "keenchic/inspections/ocr/temper_num_st"
+bare = [
+    { name = "model_detect_openvino_512", src = "model_detect_openvino_512.py" },
+    { name = "model_detect_trt_512",      src = "model_detect_trt_512.py"      },
+    { name = "procd_table",               src = "procd_table.py"               },
+    { name = "utils",                     src = "utils.py"                     },
+]
+weights_subdir = "weights"

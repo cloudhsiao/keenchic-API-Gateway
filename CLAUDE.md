@@ -67,7 +67,10 @@ uv run pytest
 uv run pytest tests/test_router.py::test_health -v
 
 # Jetson aarch64 wheel 構建（須先安裝 cython, setuptools, wheel, numpy）
-python3 build_wheel.py
+python3 build_wheel.py                              # 全部算法
+python3 build_wheel.py --list                       # 列出可選算法
+python3 build_wheel.py -a ocr/datecode-num          # 單一算法
+python3 build_wheel.py -a ocr/datecode-num -a ocr/pill-count  # 子集（PEP 440 local version 命名）
 ```
 
 
@@ -168,7 +171,7 @@ HTTP POST /api/v1/inspect
 | `keenchic/inspections/result_codes.py` | `InspectionResultCode`（0=SUCCESS, 1=INVALID_INPUT, 2=DETECTION_FAILED） |
 | `keenchic/schemas/response.py` | `InspectResponse` pydantic model |
 | `keenchic/services/permit_lookup.py` | FDA open data 許可證查詢，模組載入時預載快取，失敗則首次查詢時重試 |
-| `build_wheel.py` | Cython wheel 構建（三層編譯：keenchic dotted modules → submodule dotted → submodule bare） |
+| `build_wheel.py` | Cython wheel 構建；由 `*.build.toml` descriptor 驅動，支援 `--algorithm` 選擇性打包 |
 
 ### Adapter 對照表
 
@@ -208,6 +211,7 @@ HTTP POST /api/v1/inspect
 1. 在 `keenchic/inspections/adapters/ocr/` 新增 `<name>.py`，繼承 `InspectionAdapter`，實作 `load_models` / `unload_models` / `run`
 2. 若需要額外請求欄位，覆寫 `accepted_kwargs()` 回傳 set（router 據此做白名單驗證）
 3. 在 `keenchic/inspections/registry.py` 的 `_ADAPTER_ENTRIES` 加一行 `(name, module_path, class_name)`
+4. 在同目錄新增 `<name>.build.toml`，宣告 submodule dir、dotted/bare 模組清單、weights subdir（參考既有 `.build.toml` 格式）；**不需修改 `build_wheel.py`**
 
 ### sys.path 衝突處理
 

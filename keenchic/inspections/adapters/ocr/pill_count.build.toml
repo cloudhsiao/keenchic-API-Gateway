@@ -1,0 +1,15 @@
+inspection_name = "ocr/pill-count"
+
+[adapter]
+source = "keenchic/inspections/adapters/ocr/pill_count.py"
+cython = true
+
+[[submodule]]
+dir = "keenchic/inspections/ocr/pill_count_st"
+bare = [
+    { name = "procd_pill",         src = "procd_pill.py"         },
+    { name = "model_openvino_yolo", src = "model_openvino_yolo.py" },
+    { name = "model_trt_yolo",     src = "model_trt_yolo.py"     },
+    { name = "utils",              src = "utils.py"              },
+]
+weights_subdir = "weights"

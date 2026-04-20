@@ -1,0 +1,17 @@
+inspection_name = "ocr/datecode-num"
+
+[adapter]
+source = "keenchic/inspections/adapters/ocr/datecode_num.py"
+cython = true
+
+[[submodule]]
+dir = "keenchic/inspections/ocr/datecode_num_st"
+dotted = [
+    { name = "datecode_num_st.model_detect_openvino", src = "model_detect_openvino.py" },
+    { name = "datecode_num_st.model_detect_trt",      src = "model_detect_trt.py"      },
+    { name = "datecode_num_st.procd_date",             src = "procd_date.py"             },
+]
+bare = [
+    { name = "utils", src = "utils.py" },
+]
+weights_subdir = "weights"
