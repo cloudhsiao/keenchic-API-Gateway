@@ -26,6 +26,7 @@
       - [`ocr/temper-num` — 溫度 / 有效期 OCR](#ocrtemper-num--溫度--有效期-ocr)
       - [`ocr/meter-table` — 多通道溫度表格 OCR](#ocrmeter-table--多通道溫度表格-ocr)
   - [架構說明](#架構說明)
+  - [Wheel 打包（Jetson 部署）](#wheel-打包jetson-部署)
   - [新增 Adapter](#新增-adapter)
 
 ---
@@ -405,9 +406,88 @@ HTTP 200 JSON
 
 ---
 
+## Wheel 打包（Jetson 部署）
+
+`build_wheel.py` 負責在 Jetson Orin（aarch64）上將 Python 原始碼編譯成 Cython `.so` 並打包成 `.whl`，包含模型權重。打包資訊由各算法的 `*.build.toml` descriptor 驅動，**新增算法不需修改 `build_wheel.py`**。
+
+### 前置需求
+
+在 Jetson 上執行前需安裝 build 工具：
+
+```bash
+pip install cython setuptools wheel numpy
+```
+
+### 基本用法
+
+```bash
+# 列出所有可打包的算法
+python3 build_wheel.py --list
+
+# 打包全部算法（預設）
+python3 build_wheel.py
+
+# 打包指定算法（可重複 -a）
+python3 build_wheel.py -a ocr/datecode-num
+python3 build_wheel.py -a ocr/datecode-num -a ocr/pill-count
+```
+
+### 產出 wheel 命名規則
+
+| 打包範圍 | wheel 檔名 |
+|---|---|
+| 全部算法 | `keenchic_api_gateway-0.1.0-cp312-cp312-linux_aarch64.whl` |
+| 指定算法子集 | `keenchic_api_gateway-0.1.0+ocr_datecode_num-...-linux_aarch64.whl` |
+
+子集 build 使用 PEP 440 local version tag 標識所含算法，避免與完整 wheel 衝突。後裝的 wheel 會取代先裝的，無法同時安裝多個版本。
+
+### Wheel 內容
+
+每個 wheel 固定包含 **core**（FastAPI app、InspectionManager、registry、schemas 等）加上**所選算法**的：
+
+- Cython 編譯的 `.so`（adapter + submodule 模組）
+- 模型權重（`*/weights/*`）
+
+### Descriptor 格式（`*.build.toml`）
+
+每個算法在 `keenchic/inspections/adapters/ocr/` 下有一個同名的 `.build.toml`：
+
+```toml
+inspection_name = "ocr/datecode-num"      # X-Inspection-Name
+
+[adapter]
+source = "keenchic/inspections/adapters/ocr/datecode_num.py"
+cython = true   # false 則以 .py 原始碼保留（不 Cython 編譯）
+
+[[submodule]]
+dir = "keenchic/inspections/ocr/datecode_num_st"   # submodule 子目錄
+
+# dotted：adapter 用 `from datecode_num_st.xxx import ...` 的模組
+# 從 parent dir（ocr/）編譯，.so 放在 datecode_num_st/ 內
+dotted = [
+    { name = "datecode_num_st.model_detect_openvino", src = "model_detect_openvino.py" },
+    { name = "datecode_num_st.model_detect_trt",      src = "model_detect_trt.py"      },
+    { name = "datecode_num_st.procd_date",             src = "procd_date.py"             },
+]
+
+# bare：submodule 內部裸 `import xxx` 的模組
+# 從 submodule dir 本身編譯，module 名為裸名
+bare = [
+    { name = "utils", src = "utils.py" },
+]
+
+weights_subdir = "weights"   # 相對 dir，打包進 wheel 的 package_data
+```
+
+---
+
 ## 新增 Adapter
 
-1. 在 `keenchic/inspections/adapters/ocr/` 建立新檔案，繼承 `InspectionAdapter`：
+新增一個辨識算法需要以下四個步驟，**不需修改 `build_wheel.py` 或 router**。
+
+### 步驟一：建立 Adapter
+
+在 `keenchic/inspections/adapters/ocr/` 建立新檔案，繼承 `InspectionAdapter`：
 
 ```python
 # keenchic/inspections/adapters/ocr/my_feature.py
@@ -427,16 +507,43 @@ class MyFeatureAdapter(InspectionAdapter):
         result = ...  # 呼叫 submodule proc()
         return {
             "result": int(result.get("result", InspectionResultCode.DETECTION_FAILED)),
-            # 其他欄位...
         }
 ```
 
-2. 在 `keenchic/inspections/registry.py` 的 `_build_registry()` 加一行：
+> `accepted_kwargs()` 預設回傳 `{"include_diag"}`，不需額外欄位時可省略覆寫。
+
+### 步驟二：註冊到 Registry
+
+在 `keenchic/inspections/registry.py` 的 `_ADAPTER_ENTRIES` 加一行：
 
 ```python
-"ocr/my-feature": MyFeatureAdapter,
+("ocr/my-feature", "keenchic.inspections.adapters.ocr.my_feature", "MyFeatureAdapter"),
 ```
 
-3. 若有新的回應欄位，更新 `keenchic/schemas/response.py`。
+### 步驟三：新增 Build Descriptor
 
-> `accepted_kwargs()` 預設回傳 `{"include_diag"}`，所有 adapter 皆可接受診斷圖請求。若 adapter 不需要額外欄位，可省略覆寫。
+在同目錄新增 `my_feature.build.toml`（`build_wheel.py` 自動 discover）：
+
+```toml
+inspection_name = "ocr/my-feature"
+
+[adapter]
+source = "keenchic/inspections/adapters/ocr/my_feature.py"
+cython = true
+
+[[submodule]]
+dir = "keenchic/inspections/ocr/my_feature_st"
+dotted = [
+    { name = "my_feature_st.model_detect", src = "model_detect.py" },
+]
+bare = [
+    { name = "utils", src = "utils.py" },
+]
+weights_subdir = "weights"
+```
+
+建立後執行 `python3 build_wheel.py --list` 確認新算法已被 discover。
+
+### 步驟四：更新回應 Schema（選用）
+
+若有新的回應欄位，更新 `keenchic/schemas/response.py`。
