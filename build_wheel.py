@@ -291,11 +291,9 @@ def _write_compile_setup(dest: Path, extensions: dict[str, str]) -> Path:
 
 def _run_build_ext(setup_file: Path, cwd: Path) -> None:
     """Run build_ext --inplace and clean up build artifacts."""
-    env = {**os.environ, "SETUPTOOLS_USE_DISTUTILS": "stdlib"}
     run(
         [sys.executable, setup_file.name, "build_ext", "--inplace"],
         cwd=cwd,
-        env=env,
     )
     setup_file.unlink()
     shutil.rmtree(cwd / "build", ignore_errors=True)
