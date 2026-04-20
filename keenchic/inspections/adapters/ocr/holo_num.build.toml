@@ -1,0 +1,18 @@
+inspection_name = "ocr/holo-num"
+
+[adapter]
+source = "keenchic/inspections/adapters/ocr/holo_num.py"
+cython = true
+
+[[submodule]]
+dir = "keenchic/inspections/ocr/holo_num_st_lol"
+bare = [
+    { name = "model_detect_openvino",  src = "model_detect_openvino.py"  },
+    { name = "model_detect_trt",       src = "model_detect_trt.py"       },
+    { name = "model_enhance_openvino", src = "model_enhance_openvino.py" },
+    { name = "model_enhance_trt",      src = "model_enhance_trt.py"      },
+    { name = "procd_holo",             src = "procd_holo.py"             },
+    { name = "procd_holo_ov",          src = "procd_holo_ov.py"          },
+    { name = "utils",                  src = "utils.py"                  },
+]
+weights_subdir = "weights"
